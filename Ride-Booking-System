@@ -1,0 +1,175 @@
+// ============================================================
+//  Project 1: Ride Booking History System (Linked List Based)
+// ============================================================
+
+public class RideBookingSystem {
+
+    // ── Ride data class ──────────────────────────────────────
+    static class Ride {
+
+        int rideId;
+        String pickup;
+        String drop;
+        double fare;
+
+        Ride(int rideId, String pickup, String drop, double fare) {
+            this.rideId = rideId;
+            this.pickup = pickup;
+            this.drop = drop;
+            this.fare = fare;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("[ID:%d] %s → %s | ₹%.2f", rideId, pickup, drop, fare);
+        }
+    }
+
+    // ── Linked List Node ─────────────────────────────────────
+    static class Node {
+
+        Ride ride;
+        Node next;
+
+        Node(Ride ride) {
+            this.ride = ride;
+            this.next = null;
+        }
+    }
+
+    // ── Linked List (Ride History) ───────────────────────────
+    static class RideHistory {
+
+        private Node head;
+        private int size;
+
+        // Add a new ride at the end
+        void addRide(Ride r) {
+            Node newNode = new Node(r);
+            if (head == null) {
+                head = newNode;
+            } else {
+                Node current = head;
+                while (current.next != null) {
+                    current = current.next;
+                }
+                current.next = newNode;
+            }
+            size++;
+            System.out.println(" Ride added: " + r);
+        }
+
+        // Delete the last ride
+        void deleteLastRide() {
+            if (head == null) {
+                System.out.println("  No rides to cancel.");
+                return;
+            }
+            if (head.next == null) {
+                System.out.println(" Cancelled ride: " + head.ride);
+                head = null;
+            } else {
+                Node current = head;
+                while (current.next.next != null) {
+                    current = current.next;
+                }
+                System.out.println(" Cancelled ride: " + current.next.ride);
+                current.next = null;
+            }
+            size--;
+        }
+
+        // Display all rides
+        void displayRides() {
+            if (head == null) {
+                System.out.println(" No ride history found.");
+                return;
+            }
+            System.out.println("\n Ride History (" + size + " rides):");
+            System.out.println("─".repeat(50));
+            Node current = head;
+            int index = 1;
+            while (current != null) {
+                System.out.println("  " + index + ". " + current.ride);
+                current = current.next;
+                index++;
+            }
+            System.out.println("─".repeat(50));
+        }
+
+        // Search ride by pickup or drop location
+        void searchRide(String location) {
+            if (head == null) {
+                System.out.println("  No rides in history.");
+                return;
+            }
+            System.out.println("\n Search results for \"" + location + "\":");
+            Node current = head;
+            boolean found = false;
+            while (current != null) {
+                if (current.ride.pickup.equalsIgnoreCase(location)
+                        || current.ride.drop.equalsIgnoreCase(location)) {
+                    System.out.println("  → " + current.ride);
+                    found = true;
+                }
+                current = current.next;
+            }
+            if (!found) {
+                System.out.println("  No rides found for location: " + location);
+            }
+        }
+
+        // Reverse ride history (latest first)
+        void reverseHistory() {
+            if (head == null) {
+                System.out.println("  No rides to reverse.");
+                return;
+            }
+            Node prev = null;
+            Node current = head;
+            Node next;
+            while (current != null) {
+                next = current.next;
+                current.next = prev;
+                prev = current;
+                current = next;
+            }
+            head = prev;
+            System.out.println("🔄 Ride history reversed (showing latest first).");
+        }
+    }
+
+    // ── Main / Demo ──────────────────────────────────────────
+    public static void main(String[] args) {
+
+        RideHistory history = new RideHistory();
+
+        System.out.println("╔══════════════════════════════════════╗");
+        System.out.println("║   Ride Booking History System Demo   ║");
+        System.out.println("╚══════════════════════════════════════╝\n");
+
+        // Add rides
+        history.addRide(new Ride(101, "Koramangala", "MG Road", 120.50));
+        history.addRide(new Ride(102, "Indiranagar", "Whitefield", 250.00));
+        history.addRide(new Ride(103, "MG Road", "Airport", 850.75));
+        history.addRide(new Ride(104, "HSR Layout", "Koramangala", 80.00));
+
+        // Display all
+        history.displayRides();
+
+        // Search by location
+        history.searchRide("Koramangala");
+
+        // Reverse history
+        history.reverseHistory();
+        history.displayRides();
+
+        // Delete last ride
+        history.deleteLastRide();
+        history.displayRides();
+
+        // Delete last ride again
+        history.deleteLastRide();
+        history.displayRides();
+    }
+}
