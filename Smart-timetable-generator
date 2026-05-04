@@ -1,0 +1,172 @@
+// ============================================================
+//  Project 2: Smart Timetable Generator (Backtracking)
+// ============================================================
+
+import java.util.*;
+
+public class TimetableGenerator {
+
+    // ── Subject data class ───────────────────────────────────
+    static class Subject {
+        String name;
+        String teacher;
+        String room;
+
+        Subject(String name, String teacher, String room) {
+            this.name    = name;
+            this.teacher = teacher;
+            this.room    = room;
+        }
+
+        @Override
+        public String toString() {
+            return name + " (T:" + teacher + ", R:" + room + ")";
+        }
+    }
+
+    // ── Timetable Generator ──────────────────────────────────
+    static class SmartTimetable {
+
+        private Subject[]   subjects;      // subjects to schedule
+        private String[]    timeSlots;     // available time slots
+        private Subject[]   timetable;     // timetable[slot] = assigned subject
+        private boolean     solutionFound;
+
+        // Track which teachers/rooms are used in each slot
+        private Map<String, Set<String>> teacherSlotMap; // slot → set of teachers
+        private Map<String, Set<String>> roomSlotMap;    // slot → set of rooms
+
+        SmartTimetable(Subject[] subjects, String[] timeSlots) {
+            this.subjects       = subjects;
+            this.timeSlots      = timeSlots;
+            this.timetable      = new Subject[timeSlots.length];
+            this.solutionFound  = false;
+            this.teacherSlotMap = new HashMap<>();
+            this.roomSlotMap    = new HashMap<>();
+
+            for (String slot : timeSlots) {
+                teacherSlotMap.put(slot, new HashSet<>());
+                roomSlotMap.put(slot, new HashSet<>());
+            }
+        }
+
+        // Check if placing 'subject' into 'slotIndex' is conflict-free
+        boolean isSafe(Subject subject, int slotIndex) {
+            String slot = timeSlots[slotIndex];
+
+            // Teacher conflict: same teacher already in this slot?
+            if (teacherSlotMap.get(slot).contains(subject.teacher)) {
+                return false;
+            }
+            // Room conflict: same room already in this slot?
+            if (roomSlotMap.get(slot).contains(subject.room)) {
+                return false;
+            }
+            return true;
+        }
+
+        // Assign subject to slot (mark constraints)
+        void assignSlot(Subject subject, int slotIndex) {
+            String slot = timeSlots[slotIndex];
+            timetable[slotIndex] = subject;
+            teacherSlotMap.get(slot).add(subject.teacher);
+            roomSlotMap.get(slot).add(subject.room);
+        }
+
+        // Unassign subject from slot (undo constraints)
+        void unassignSlot(Subject subject, int slotIndex) {
+            String slot = timeSlots[slotIndex];
+            timetable[slotIndex] = null;
+            teacherSlotMap.get(slot).remove(subject.teacher);
+            roomSlotMap.get(slot).remove(subject.room);
+        }
+
+        // Core backtracking: place subjects[subjectIndex] into some slot
+        void backtrack(int subjectIndex) {
+            // All subjects placed → solution found
+            if (subjectIndex == subjects.length) {
+                solutionFound = true;
+                System.out.println("\n Valid timetable found!\n");
+                printTimetable();
+                // Remove 'return' and add a counter to collect ALL solutions
+                return;
+            }
+
+            Subject current = subjects[subjectIndex];
+
+            for (int slotIndex = 0; slotIndex < timeSlots.length; slotIndex++) {
+                if (timetable[slotIndex] == null && isSafe(current, slotIndex)) {
+                    // Try this slot
+                    assignSlot(current, slotIndex);
+                    System.out.println("  ➡ Trying: " + current.name
+                            + " → " + timeSlots[slotIndex]);
+
+                    backtrack(subjectIndex + 1);
+
+                    if (solutionFound) return; // comment out to find all solutions
+
+                    // Undo (backtrack)
+                    System.out.println("  ↩ Backtracking: " + current.name
+                            + " from " + timeSlots[slotIndex]);
+                    unassignSlot(current, slotIndex);
+                }
+            }
+        }
+
+        // Public entry point
+        void generateTimetable() {
+            System.out.println("🔍 Starting backtracking search...\n");
+            backtrack(0);
+            if (!solutionFound) {
+                System.out.println(" No valid timetable possible with given constraints.");
+            }
+        }
+
+        // Print the current timetable
+        void printTimetable() {
+            System.out.println("┌────────────────────┬──────────────────────────────────────────┐");
+            System.out.printf("│ %-18s │ %-40s │%n", "Time Slot", "Subject (Teacher, Room)");
+            System.out.println("├────────────────────┼──────────────────────────────────────────┤");
+            for (int i = 0; i < timeSlots.length; i++) {
+                String assigned = (timetable[i] != null) ? timetable[i].toString() : "--- Free ---";
+                System.out.printf("│ %-18s │ %-40s │%n", timeSlots[i], assigned);
+            }
+            System.out.println("└────────────────────┴──────────────────────────────────────────┘");
+        }
+    }
+
+    // ── Main / Demo ──────────────────────────────────────────
+    public static void main(String[] args) {
+
+        System.out.println("╔══════════════════════════════════════╗");
+        System.out.println("║    Smart Timetable Generator Demo    ║");
+        System.out.println("╚══════════════════════════════════════╝\n");
+
+        // Define subjects: name, teacher, room
+        Subject[] subjects = {
+            new Subject("Data Structures",   "Prof. Sharma",  "Room-101"),
+            new Subject("Operating Systems", "Prof. Mehta",   "Room-102"),
+            new Subject("DBMS",              "Prof. Sharma",  "Room-103"), // same teacher, diff room
+            new Subject("Networks",          "Prof. Iyer",    "Room-101"), // same room, diff teacher
+            new Subject("Algorithms",        "Prof. Mehta",   "Room-104"), // same teacher, diff room
+        };
+
+        // Define available time slots
+        String[] timeSlots = {
+            "Mon 9:00–10:00",
+            "Mon 10:00–11:00",
+            "Mon 11:00–12:00",
+            "Tue 9:00–10:00",
+            "Tue 10:00–11:00",
+        };
+
+        // Validate: need at least as many slots as subjects
+        if (timeSlots.length < subjects.length) {
+            System.out.println("  Not enough time slots for all subjects!");
+            return;
+        }
+
+        SmartTimetable generator = new SmartTimetable(subjects, timeSlots);
+        generator.generateTimetable();
+    }
+}
